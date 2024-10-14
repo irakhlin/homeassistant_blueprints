@@ -15,44 +15,44 @@ blueprint:
       name: Room Temperature Sensor
       default: {}
       selector:
-      target:
-        entity:
-          domain: sensor
+        target:
+          entity:
+            domain: sensor
     temperature_alarm:
       name: Optional Temperature Alarm
       default: {}
       selector:
-      target:
-        entity:
-          domain: binary_sensor
+        target:
+          entity:
+            domain: binary_sensor
     temperature_differential:
       name: Temperature Differential
       default: {}
       selector:
-      target:
-        entity:
-          domain: input_number
+        target:
+          entity:
+            domain: input_number
     low_trigger:
       name: Low Temperature On Trigger
       default: {}
       selector:
-      target:
-        entity:
-          domain: input_number
+        target:
+          entity:
+            domain: input_number
     high_trigger:
       name: High Temperature Off Trigger
       default: {}
       selector:
-      target:
-        entity:
-          domain: input_number
+        target:
+          entity:
+            domain: input_number
     ultra_low_trigger:
       name: Too low temperature to speed heat
       default: {}
       selector:
-      target:
-        entity:
-          domain: input_number
+        target:
+          entity:
+            domain: input_number
          
 variables:
   climate_target: !input mini_split
@@ -106,3 +106,4 @@ actions:
           data:
             level: error
             message: test
+      
