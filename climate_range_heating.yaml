@@ -49,11 +49,11 @@ blueprint:
             - domain: input_number
     ultra_low_trigger:
       name: Too low temperature to speed heat
-      default: {}
+      default: 62
       selector:
-        target:
-          entity:
-            - domain: input_number
+        number:
+          min: 50
+          max: 80
          
 variables:
   climate_target: !input mini_split
@@ -66,15 +66,15 @@ variables:
   
 trigger:
   - trigger: numeric_state
-    entity_id: "{{ temp }}"
-    value_template: "{{ (state.state | float) <= (states[very_low].state | float) }}"
+    entity_id: !input temperature_sensor
+    value_template: "{{ (state.state | float) <= (very_low | float) }}"
     id: ultra_low_trigger    
   - trigger: numeric_state
-    entity_id: "{{ temp }}"
+    entity_id: !input temperature_sensor
     value_template: "{{ ((states[climate_target].temperature | float) - (temp_diff | float)) <= (state.state | float) }}"
     id: low_temperature_diff
   - trigger: numeric_state
-    entity_id: "{{ temp }}"
+    entity_id: !input temperature_sensor
     value_template: "{{ ((states[climate_target].temperature | float) + (temp_diff | float)) >= (state.state | float) }}"
     id: high_temperature_diff
   - trigger: template
