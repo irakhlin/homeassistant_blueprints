@@ -7,45 +7,45 @@ blueprint:
       name: Mini Split
       default: {}
       selector:
-        target:
-          entity:
+        entity:
+          filter:
             - domain: climate
             
     temperature_sensor:
       name: Room Temperature Sensor
       default: {}
       selector:
-        target:
-          entity:
+        entity:
+          filter:
             - domain: sensor
-            - device_class: temperature
+              device_class: temperature
     temperature_alarm:
       name: Optional Temperature Alarm
       default: {}
       selector:
-        target:
-          entity:
+        entity:
+          filters:
             - domain: binary_sensor
     temperature_differential:
       name: Temperature Differential
       default: {}
       selector:
-        target:
-          entity:
+        entity:
+          filters:
             - domain: input_number
     low_trigger:
       name: Low Temperature On Trigger
       default: {}
       selector:
-        target:
-          entity:
+        entity:
+          filters:
             - domain: input_number
     high_trigger:
       name: High Temperature Off Trigger
       default: {}
       selector:
-        target:
-          entity:
+        entity:
+          filters:
             - domain: input_number
     ultra_low_trigger:
       name: Too low temperature to speed heat
