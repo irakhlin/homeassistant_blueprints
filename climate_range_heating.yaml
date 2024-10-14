@@ -24,28 +24,28 @@ blueprint:
       default: {}
       selector:
         entity:
-          filters:
+          filter:
             - domain: binary_sensor
     temperature_differential:
       name: Temperature Differential
       default: {}
       selector:
         entity:
-          filters:
+          filter:
             - domain: input_number
     low_trigger:
       name: Low Temperature On Trigger
       default: {}
       selector:
         entity:
-          filters:
+          filter:
             - domain: input_number
     high_trigger:
       name: High Temperature Off Trigger
       default: {}
       selector:
         entity:
-          filters:
+          filter:
             - domain: input_number
     ultra_low_trigger:
       name: Too low temperature to speed heat
