@@ -71,11 +71,11 @@ trigger:
     id: ultra_low_trigger    
   - trigger: numeric_state
     entity_id: !input temperature_sensor
-    value_template: "{{ ((states[climate_target].temperature | float) - (temp_diff | float)) <= (state.state | float) }}"
+    value_template: "{{ ((states[climate_target].temperature | float) - (states[temp_diff].state | float)) <= (state.state | float) }}"
     id: low_temperature_diff
   - trigger: numeric_state
     entity_id: !input temperature_sensor
-    value_template: "{{ ((states[climate_target].temperature | float) + (temp_diff | float)) >= (state.state | float) }}"
+    value_template: "{{ ((states[climate_target].temperature | float) + (states[temp_diff].state | float)) >= (state.state | float) }}"
     id: high_temperature_diff
   - trigger: template
     value_template: "{{ is_state(temperature_alarm, 'on') }}"
