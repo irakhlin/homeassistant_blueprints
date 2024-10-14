@@ -54,8 +54,7 @@ blueprint:
         number:
           min: 50
           max: 80
-         
-variables:
+trigger_variables:
   climate_target: !input mini_split
   temp: !input temperature_sensor
   temp_alarm: !input temperature_alarm
@@ -63,7 +62,6 @@ variables:
   high: !input high_trigger
   very_low: !input ultra_low_trigger
   temp_diff: !input temperature_differential
-  
 trigger:
   - trigger: numeric_state
     entity_id: !input temperature_sensor
@@ -86,6 +84,11 @@ trigger:
   - trigger: template
     id: high_temperature_range
     value_template: "{{ (states[temp].state | float) >= (states[high].state | float) }}"
+
+variables:
+  climate_target: !input mini_split
+  climate_target_temperature: "{{ ((states[climate_target].temperature }}"
+    
 actions:
   - choose:
     - conditions:
