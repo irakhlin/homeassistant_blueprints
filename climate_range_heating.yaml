@@ -65,18 +65,18 @@ trigger_variables:
 
 trigger:
   - trigger: numeric_state
-    entity_id: "{{ temp }}"
+    entity_id: !input 'temperature_sensor'
     below: "{{ very_low | float }}"
     id: ultra_low_trigger    
   - trigger: numeric_state
-    entity_id: "{{ temp }}"
+    entity_id:  !input 'temperature_sensor'
     below: "{{ states[climate_target].temperature | float - states[temp_diff].state | float }}"
     id: low_temperature_diff
   - trigger: numeric_state
-    entity_id: "{{ temp }}"
+    entity_id:  !input 'temperature_sensor'
     above: "{{ states[climate_target].temperature | float + states[temp_diff].state | float }}"
     id: high_temperature_diff
-  - trigger:
+  - trigger: template
     value_template: "{{ is_state(temp_alarm, 'on') }}"
     id: alarm_trigger
   - trigger: template
