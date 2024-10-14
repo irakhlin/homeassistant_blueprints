@@ -1,0 +1,108 @@
+blueprint:
+  name: Climate Temperature Range Automation
+  description: Maintain climate temperature within a specific range
+  domain: automation
+  input:
+    mini_split:
+      name: Mini Split
+      default: {}
+      selector:
+        target:
+          entity:
+            domain: climate
+            
+    temperature_sensor:
+      name: Room Temperature Sensor
+      default: {}
+      selector:
+      target:
+        entity:
+          domain: sensor
+    temperature_alarm:
+      name: Optional Temperature Alarm
+      default: {}
+      selector:
+      target:
+        entity:
+          domain: binary_sensor
+    temperature_differential:
+      name: Temperature Differential
+      default: {}
+      selector:
+      target:
+        entity:
+          domain: input_number
+    low_trigger:
+      name: Low Temperature On Trigger
+      default: {}
+      selector:
+      target:
+        entity:
+          domain: input_number
+    high_trigger:
+      name: High Temperature Off Trigger
+      default: {}
+      selector:
+      target:
+        entity:
+          domain: input_number
+    ultra_low_trigger:
+      name: Too low temperature to speed heat
+      default: {}
+      selector:
+      target:
+        entity:
+          domain: input_number
+         
+variables:
+  climate_target: !input mini_split
+  temp: !input temperature_sensor
+  temp_alarm: !input temperature_alarm
+  low: !input low_trigger
+  high: !input high_trigger
+  very_low: !input ultra_low_trigger
+  temp_diff: !input temperature_differential
+  
+trigger:
+  - trigger: numeric_state
+    entity_id: "{{ temp }}"
+    value_template: "{{ (state.state | float) <= (states[very_low].state | float) }}"
+    id: ultra_low_trigger    
+  - trigger: numeric_state
+    entity_id: "{{ temp }}"
+    value_template: "{{ ((states[climate_target].temperature | float) - (temp_diff | float)) <= (state.state | float) }}"
+    id: low_temperature_diff
+  - trigger: numeric_state
+    entity_id: "{{ temp }}"
+    value_template: "{{ ((states[climate_target].temperature | float) + (temp_diff | float)) >= (state.state | float) }}"
+    id: high_temperature_diff
+  - trigger: template
+    value_template: "{{ is_state(temperature_alarm, 'on') }}"
+    id: alarm_trigger
+  - trigger: template
+    id: low_temperature_range
+    value_template: >
+      {%- if low_trigger is defined -%}
+        {{ (states[temp].state | float) <= (states[low].state | float) }}
+      {%- else -%}
+        false
+      {%- endif -%}
+  - trigger: template
+    id: high_temperature_range
+    value_template: >
+      {%- if low_trigger is defined -%}
+        {{ (states[temp].state | float) >= (states[high].state | float) }}
+      {%- else -%}
+        false
+      {%- endif -%}
+      
+actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: very_low
+      sequence:
+        - action: system_log.write
+          data:
+            level: error
+            message: test
