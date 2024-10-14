@@ -62,24 +62,23 @@ trigger_variables:
   high: !input high_trigger
   very_low: !input ultra_low_trigger
   temp_diff: !input temperature_differential
-variables:
-  climate_target: !input mini_split
-  climate_target_temperature: '{{ states[climate_target].temperature }}'
+
 trigger:
   - trigger: numeric_state
-    entity_id: !input temperature_sensor
-    value_template: "{{ (state.state | float) <= (very_low | float) }}"
+    entity_id: "{{ temp }}"
+    below: "{{ very_low | float }}"
     id: ultra_low_trigger    
   - trigger: numeric_state
-    entity_id: !input temperature_sensor
-    value_template: "{{ ((states[climate_target].temperature | float) - (states[temp_diff].state | float)) <= (state.state | float) }}"
+    entity_id: "{{ temp }}"
+    below: "{{ states[climate_target].temperature | float - states[temp_diff].state | float }}"
     id: low_temperature_diff
   - trigger: numeric_state
-    entity_id: !input temperature_sensor
-    value_template: "{{ ((states[climate_target].temperature | float) + (states[temp_diff].state | float)) >= (state.state | float) }}"
+    entity_id: "{{ temp }}"
+    above: "{{ states[climate_target].temperature | float + states[temp_diff].state | float }}"
     id: high_temperature_diff
-  - trigger: template
-    value_template: "{{ is_state(temperature_alarm, 'on') }}"
+  - trigger:
+    platform: template
+    value_template: "{{ is_state(temp_alarm, 'on') }}"
     id: alarm_trigger
   - trigger: template
     id: low_temperature_range
@@ -87,6 +86,11 @@ trigger:
   - trigger: template
     id: high_temperature_range
     value_template: "{{ (states[temp].state | float) >= (states[high].state | float) }}"
+
+variables:
+  climate_target: !input mini_split
+  climate_target_temperature: "{{ states[climate_target].attributes.temperature }}"
+
 actions:
   - choose:
     - conditions:
