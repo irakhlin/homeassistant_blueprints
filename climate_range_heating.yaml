@@ -77,7 +77,6 @@ trigger:
     above: "{{ states[climate_target].temperature | float + states[temp_diff].state | float }}"
     id: high_temperature_diff
   - trigger:
-    platform: template
     value_template: "{{ is_state(temp_alarm, 'on') }}"
     id: alarm_trigger
   - trigger: template
