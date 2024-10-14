@@ -5,7 +5,6 @@ blueprint:
   input:
     mini_split:
       name: Mini Split
-      default: {}
       selector:
         entity:
           filter:
@@ -13,7 +12,6 @@ blueprint:
             
     temperature_sensor:
       name: Room Temperature Sensor
-      default: {}
       selector:
         entity:
           filter:
@@ -21,14 +19,12 @@ blueprint:
               device_class: temperature
     temperature_alarm:
       name: Optional Temperature Alarm
-      default: {}
       selector:
         entity:
           filter:
             - domain: binary_sensor
     temperature_differential:
       name: Temperature Differential
-      default: {}
       selector:
         entity:
           filter:
@@ -42,7 +38,6 @@ blueprint:
             - domain: input_number
     high_trigger:
       name: High Temperature Off Trigger
-      default: {}
       selector:
         entity:
           filter:
