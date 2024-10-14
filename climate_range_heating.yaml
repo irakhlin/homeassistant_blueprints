@@ -82,21 +82,10 @@ trigger:
     id: alarm_trigger
   - trigger: template
     id: low_temperature_range
-    value_template: >
-      {%- if low_trigger is defined -%}
-        {{ (states[temp].state | float) <= (states[low].state | float) }}
-      {%- else -%}
-        false
-      {%- endif -%}
+    value_template: "{{ (states[temp].state | float) <= (states[low].state | float) }}"
   - trigger: template
     id: high_temperature_range
-    value_template: >
-      {%- if low_trigger is defined -%}
-        {{ (states[temp].state | float) >= (states[high].state | float) }}
-      {%- else -%}
-        false
-      {%- endif -%}
-      
+    value_template: "{{ (states[temp].state | float) >= (states[high].state | float) }}"
 actions:
   - choose:
     - conditions:
