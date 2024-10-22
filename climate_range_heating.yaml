@@ -3,96 +3,249 @@ blueprint:
   description: Maintain climate temperature within a specific range
   domain: automation
   input:
-    mini_split:
-      name: Mini Split
+    input_climate_target:
+      name: Climate Entity
+      description: climate entity that can control room temperature
       selector:
         entity:
           filter:
             - domain: climate
-            
-    temperature_sensor:
-      name: Room Temperature Sensor
+    input_runtime_schedule:
+      name: Runtime Schedule
+      description: Schedule for main runtime of automation
+      default:
+      selector:
+        entity:
+          filter:
+            - domain: schedule
+    input_temperature_sensor:
+      name: Temperature Sensor
+      description: Temperature Sensor for room
       selector:
         entity:
           filter:
             - domain: sensor
               device_class: temperature
-    temperature_alarm:
-      name: Optional Temperature Alarm
+            - domain: input_number
+    input_temperature_alarm:
+      name: Temperature Alarm
+      description: Optional binary sensor that triggers when temperature is out of range
+      default:
       selector:
         entity:
           filter:
             - domain: binary_sensor
-    temperature_differential:
-      name: Temperature Differential
-      selector:
-        entity:
-          filter:
-            - domain: input_number
-    low_trigger:
+    input_low_temperature:
       name: Low Temperature On Trigger
-      default: {}
+      description: low temperature trigger setpoint
       selector:
         entity:
           filter:
             - domain: input_number
-    high_trigger:
+    input_high_temperature:
       name: High Temperature Off Trigger
+      description: high temperature trigger setpoint
       selector:
         entity:
           filter:
             - domain: input_number
-    ultra_low_trigger:
+    input_extreme_temperature:
       name: Too low temperature to speed heat
+      description: Temperature at which to send notifications (too high/too low)
       default: 62
       selector:
         number:
           min: 50
           max: 80
+    input_enable_temperature_notification:
+      name: Temperature Warning Notification
+      description: Enable Temperature Warning Notification
+      default: false
+      selector:
+        boolean:
+    input_notification_schedule:
+      name: Notification Schedule
+      description: Optional schedule to turn on/off notifications at specific times
+      selector:
+        entity:
+          filter:
+            - domain: schedule
+            
+    input_notify_device:
+      name: Mobile Device
+      description: Select a device that runs the official Home Assistant app to receive notifications. If you wish to notify a group of devices or and Android/Fire TV use the field below to override this selection. This can be left blank in that case
+      default: ""
+      selector:
+        device:
+          integration: mobile_app
+    input_notify_group:
+      name: Notification Group
+      description: |
+        The name of the group to send notifications to.
+        If set, this will override individual devices above.
+      default: ""
+    input_timeout_variable:
+      name: Running state variable
+      description: Binary Sensor Variable to Save running state
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+              integration: variable
+    input_timeout_time:
+      name: Timeout time
+      description: timeout in minutes to not retrigger climate action
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 120
+              
 trigger_variables:
-  climate_target: !input mini_split
-  temp: !input temperature_sensor
-  temp_alarm: !input temperature_alarm
-  low: !input low_trigger
-  high: !input high_trigger
-  very_low: !input ultra_low_trigger
-  temp_diff: !input temperature_differential
-
+  temperature_alarm: !input input_temperature_alarm
+  timeout_time: !input input_timeout_time
+  
 trigger:
   - trigger: numeric_state
-    entity_id: !input 'temperature_sensor'
-    below: "{{ very_low | float }}"
-    id: ultra_low_trigger    
+    entity_id: !input 'input_temperature_sensor'
+    below: !input 'input_extreme_temperature'
+    id: extreme_temperature_trigger    
+  # - trigger: template
+    # value_template: "{{ is_state(temperature_alarm, 'on') }}"
+    # id: alarm_trigger
   - trigger: numeric_state
-    entity_id:  !input 'temperature_sensor'
-    below: "{{ states[climate_target].temperature | float - states[temp_diff].state | float }}"
-    id: low_temperature_diff
+    entity_id: !input 'input_temperature_sensor'
+    id: low_temperature_range_trigger
+    below: !input 'input_low_temperature'
   - trigger: numeric_state
-    entity_id:  !input 'temperature_sensor'
-    above: "{{ states[climate_target].temperature | float + states[temp_diff].state | float }}"
-    id: high_temperature_diff
-  - trigger: template
-    value_template: "{{ is_state(temp_alarm, 'on') }}"
-    id: alarm_trigger
-  - trigger: template
-    id: low_temperature_range
-    value_template: "{{ (states[temp].state | float) <= (states[low].state | float) }}"
-  - trigger: template
-    id: high_temperature_range
-    value_template: "{{ (states[temp].state | float) >= (states[high].state | float) }}"
-
+    entity_id: !input 'input_temperature_sensor'
+    id: high_temperature_range_trigger
+    above: !input 'input_high_temperature'
+  - trigger: state
+    entity_id: !input 'input_timeout_variable'
+    id: reset_timeout_trigger
+    from: "off"
+    to: "on"
+    for:
+      minutes: "{{ timeout_time | int }}"
 variables:
-  climate_target: !input mini_split
-  climate_target_temperature: "{{ states[climate_target].attributes.temperature }}"
-
+  timeout_variable: !input 'input_timeout_variable'
+  climate_target: !input 'input_climate_target'
+  temperature_sensor: !input 'input_temperature_sensor'
+  enable_temperature_notification: !input 'input_enable_temperature_notification'
+  low_temperature: !input 'input_low_temperature'
+  high_temperature: !input 'input_high_temperature'
+  notify_group: !input 'input_notify_group'
+  notify_group_target: "{{ notify_group | lower | regex_replace('^notify\\.', '') | replace(' ','_') }}"
+  notify_device: !input 'input_notify_device'
+  runtime_schedule: !input 'input_runtime_schedule'
+  notification_schedule: !input 'input_notification_schedule'
+  notification_message: "Temperature in Philip's room is {{ states(temperature_sensor) }}"
+  notify_target: >
+    {% if group %}
+      {{ group | lower | replace('notify.', '') | replace(' ','_') }}
+    {% elif notify_device %}
+      mobile_app_{{ (device_attr(notify_device, 'name_by_user') or device_attr(notify_device, 'name')) | slugify }}
+    {% endif %}
+  
+conditions:
+  - condition: or
+    conditions:
+      - condition: trigger
+        id: reset_timeout_trigger
+      - condition: and
+        conditions:
+          - condition: trigger
+            id: extreme_temperature_trigger
+          - condition: template
+            value_template: "{{ (utcnow() | as_timestamp - this.attributes.last_triggered | as_timestamp) | default(0) | int > 600 }}"
+          - condition: state
+            entity_id: !input 'input_notification_schedule'
+            state: "on"
+      - condition: and
+        conditions:
+          - condition: trigger
+            id:
+              - alarm_trigger
+              - high_temperature_range_trigger
+              - low_temperature_range_trigger
+          - condition: state
+            entity_id: !input 'input_timeout_variable'
+            state: "off"
+          - condition: template
+            value_template: "{{ is_state(runtime_schedule, 'on') }}"
+mode: queued
+max: 5
+max_exceeded: silent
 actions:
   - choose:
-    - conditions:
-      - condition: trigger
-        id: very_low
-      sequence:
-        - action: system_log.write
-          data:
-            level: error
-            message: test
-      
+      - conditions:
+          - condition: trigger
+            id: reset_timeout_trigger
+        sequence:
+          - action: variable.update_binary_sensor
+            target:
+              entity_id: !input 'input_timeout_variable'
+            data:
+              value: "false"
+          - stop: Timeout value reset
+      - conditions:
+          - condition: trigger
+            id: extreme_temperature_trigger
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ not notify_group_target }}"
+                sequence:
+                  - device_id: !input input_notify_device
+                    domain: mobile_app
+                    type: notify
+                    title: "Climate warning notification"
+                    message: "{{ notification_message }}"
+                    data:
+                      push:
+                        sound:
+                          critical: true
+            default:
+              - service: "notify.{{ notify_group_target }}"
+                data:
+                  title: "Climate warning notification"
+                  message: "{{ notification_message }}"
+                  data:
+                    push:
+                      sound:
+                        critical: true
+      - conditions:
+          - condition: trigger
+            id: high_temperature_range_trigger
+        sequence:
+          - action: climate.turn_off
+            target:
+              entity_id: "{{ climate_target }}"
+          - action: variable.update_binary_sensor
+            target:
+              entity_id: !input 'input_timeout_variable'
+            data:
+              value: "true"
+      - conditions:
+          - condition: trigger
+            id: low_temperature_range_trigger
+        sequence:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: "{{ climate_target }}"
+            data:
+              hvac_mode: heat
+          - delay:
+              seconds: 3
+          - action: climate.set_fan_mode
+            target:
+              entity_id: "{{ climate_target }}"
+            data:
+              fan_mode: auto
+          - action: variable.update_binary_sensor
+            target:
+              entity_id: !input 'input_timeout_variable'
+            data:
+              value: "true"
